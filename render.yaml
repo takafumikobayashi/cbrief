@@ -1,0 +1,21 @@
+# Render Blueprint for cbrief
+# https://render.com/docs/blueprint-spec
+
+services:
+  # Backend API Service
+  - type: web
+    name: cbrief-api
+    env: docker
+    dockerfilePath: ./apps/backend/Dockerfile
+    dockerContext: .
+    plan: free  # Start with free tier (will sleep after 15min inactivity)
+    region: oregon  # Closest to Japan: singapore, oregon, frankfurt
+    branch: main
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 3001
+      - key: NODE_ENV
+        value: production
+      - key: GEMINI_API_KEY
+        sync: false  # Set manually in Render dashboard for security

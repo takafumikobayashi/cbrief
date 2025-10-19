@@ -1,0 +1,224 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* ベースフォントサイズとタイポグラフィ（PRD §7: 14pt以上） */
+  body {
+    @apply font-sans antialiased;
+    font-size: 14pt;
+    line-height: 1.75;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+
+  /* 見出し */
+  h1 {
+    @apply text-4xl font-bold tracking-tight;
+    line-height: 1.2;
+  }
+
+  h2 {
+    @apply text-3xl font-bold tracking-tight;
+    line-height: 1.3;
+  }
+
+  h3 {
+    @apply text-2xl font-semibold tracking-tight;
+    line-height: 1.4;
+  }
+
+  h4 {
+    @apply text-xl font-semibold;
+    line-height: 1.5;
+  }
+
+  /* コードブロック */
+  pre {
+    @apply font-mono;
+  }
+
+  code {
+    @apply font-mono text-sm;
+  }
+
+  /* リンク */
+  a {
+    @apply text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors;
+  }
+}
+
+@layer components {
+  /* カスタムボタンスタイル */
+  .btn-primary {
+    @apply bg-primary-600 dark:bg-primary-700 text-white px-6 py-2 rounded-md hover:bg-primary-700 dark:hover:bg-primary-800 disabled:bg-gray-400 dark:disabled:bg-gray-600 transition-colors font-medium;
+  }
+
+  .btn-secondary {
+    @apply bg-secondary-600 dark:bg-secondary-700 text-white px-6 py-2 rounded-md hover:bg-secondary-700 dark:hover:bg-secondary-800 disabled:bg-gray-400 dark:disabled:bg-gray-600 transition-colors font-medium;
+  }
+
+  /* カスタムカードスタイル */
+  .card {
+    @apply bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors;
+  }
+
+  /* カスタム入力スタイル */
+  .input {
+    @apply w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md px-3 py-2 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400;
+  }
+
+  /* GitHub風コードブロック */
+  .github-code-block {
+    @apply rounded-md border overflow-x-auto my-4;
+    background-color: #f6f8fa;
+    border-color: #d0d7de;
+    padding: 16px;
+    font-family:
+      ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+    font-size: 12px;
+    line-height: 1.6;
+  }
+
+  .dark .github-code-block {
+    background-color: #0d1117;
+    border-color: #30363d;
+  }
+
+  .github-code-block code {
+    background: transparent;
+    padding: 0;
+    border-radius: 0;
+    font-family: inherit;
+    font-size: inherit;
+  }
+
+  /* Highlight.js GitHub風カラースキーム（ライトモード） */
+  .hljs {
+    color: #24292f;
+  }
+
+  .hljs-comment,
+  .hljs-quote {
+    color: #6e7781;
+    font-style: italic;
+  }
+
+  .hljs-keyword,
+  .hljs-selector-tag,
+  .hljs-type {
+    color: #cf222e;
+  }
+
+  .hljs-string,
+  .hljs-meta .hljs-string {
+    color: #0a3069;
+  }
+
+  .hljs-number,
+  .hljs-literal,
+  .hljs-variable,
+  .hljs-template-variable,
+  .hljs-tag .hljs-attr {
+    color: #0550ae;
+  }
+
+  .hljs-title,
+  .hljs-section {
+    color: #8250df;
+    font-weight: 600;
+  }
+
+  .hljs-attr,
+  .hljs-attribute,
+  .hljs-class .hljs-title,
+  .hljs-template-tag {
+    color: #0550ae;
+  }
+
+  .hljs-regexp,
+  .hljs-link {
+    color: #116329;
+  }
+
+  .hljs-symbol,
+  .hljs-bullet,
+  .hljs-meta {
+    color: #953800;
+  }
+
+  .hljs-deletion {
+    color: #82071e;
+    background-color: #ffebe9;
+  }
+
+  .hljs-addition {
+    color: #116329;
+    background-color: #dafbe1;
+  }
+
+  /* Highlight.js GitHub風カラースキーム（ダークモード） */
+  .dark .hljs {
+    color: #c9d1d9;
+  }
+
+  .dark .hljs-comment,
+  .dark .hljs-quote {
+    color: #8b949e;
+    font-style: italic;
+  }
+
+  .dark .hljs-keyword,
+  .dark .hljs-selector-tag,
+  .dark .hljs-type {
+    color: #ff7b72;
+  }
+
+  .dark .hljs-string,
+  .dark .hljs-meta .hljs-string {
+    color: #a5d6ff;
+  }
+
+  .dark .hljs-number,
+  .dark .hljs-literal,
+  .dark .hljs-variable,
+  .dark .hljs-template-variable,
+  .dark .hljs-tag .hljs-attr {
+    color: #79c0ff;
+  }
+
+  .dark .hljs-title,
+  .dark .hljs-section {
+    color: #d2a8ff;
+    font-weight: 600;
+  }
+
+  .dark .hljs-attr,
+  .dark .hljs-attribute,
+  .dark .hljs-class .hljs-title,
+  .dark .hljs-template-tag {
+    color: #79c0ff;
+  }
+
+  .dark .hljs-regexp,
+  .dark .hljs-link {
+    color: #a5d6ff;
+  }
+
+  .dark .hljs-symbol,
+  .dark .hljs-bullet,
+  .dark .hljs-meta {
+    color: #ffa657;
+  }
+
+  .dark .hljs-deletion {
+    color: #ffdcd7;
+    background-color: #67060c;
+  }
+
+  .dark .hljs-addition {
+    color: #aff5b4;
+    background-color: #033a16;
+  }
+}

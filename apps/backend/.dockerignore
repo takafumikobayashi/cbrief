@@ -1,0 +1,27 @@
+node_modules
+dist
+*.log
+.env
+.env.*
+*.tsbuildinfo
+.turbo
+coverage
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test files
+*.test.ts
+*.spec.ts
+__tests__
