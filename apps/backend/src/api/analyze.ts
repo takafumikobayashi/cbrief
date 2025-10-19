@@ -3,6 +3,8 @@ import type { AnalyzeRequest } from '@cbrief/shared';
 import { detectLanguage } from '../utils/languageDetector';
 import { runStaticAnalysis } from '../utils/staticAnalysis';
 import { formatWithGemini } from '../utils/geminiClient';
+// import { extractFromAST } from '../utils/astExtractor'; // Temporarily disabled
+import { loadPolicies } from '../utils/policyLoader';
 
 export const analyzeRouter = Router();
 
@@ -33,17 +35,39 @@ analyzeRouter.post('/analyze', async (req, res) => {
 
     console.log(`Detected language: ${language}`);
 
-    // 2. 静的解析（Semgrep/Bandit/Secrets）
+    // 2. ポリシー読み込み
+    const policyContent = await loadPolicies(request.policies || []);
+    if (policyContent) {
+      console.log('Loaded policies successfully.');
+    }
+
+    // 3. AST抽出（一時的に無効化 - web-tree-sitterの設定が必要）
+    // TODO: web-tree-sitterの設定を修正してから有効化
+    const astData = {
+      functions: [],
+      classes: [],
+      imports: [],
+      comments: [],
+    };
+    console.log('AST extraction temporarily disabled');
+
+    // 4. 静的解析（Semgrep/Bandit/Secrets）
     const staticAnalysisResults = await runStaticAnalysis(request.content, language);
 
     console.log(
       `Static analysis complete. Found ${staticAnalysisResults.flatMap((r) => r.findings).length} issues`
     );
 
-    // 3. LLM整形（Gemini 1.5 Flash）
-    const response = await formatWithGemini(request.content, staticAnalysisResults, language);
+    // 5. LLM整形（Gemini 1.5 Flash）
+    const response = await formatWithGemini(
+      request.content,
+      staticAnalysisResults,
+      astData,
+      policyContent,
+      language
+    );
 
-    // 4. JSONスキーマ検証は既存のsharedパッケージで実施済み
+    // 6. JSONスキーマ検証は既存のsharedパッケージで実施済み
 
     res.json(response);
   } catch (error) {

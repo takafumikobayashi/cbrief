@@ -54,20 +54,27 @@ export async function runSemgrep(
   const tempFile = await createTempFile(code, extensionMap[language]);
 
   try {
-    // Semgrep実行（セキュリティルールのみ）
-    const { stdout } = await execAsync(
-      `semgrep --config=auto --json --quiet "${tempFile}"`,
-      { maxBuffer: 10 * 1024 * 1024 } // 10MB
-    );
+    // Semgrep実行（autoモード：言語とセキュリティルールを自動選択）
+    const command = `semgrep --config=auto --json --quiet "${tempFile}"`;
+    console.log(`Executing Semgrep: ${command}`);
+
+    const { stdout } = await execAsync(command, {
+      maxBuffer: 10 * 1024 * 1024,
+    });
+
+    console.log(`Semgrep raw output (first 500 chars): ${stdout.substring(0, 500)}`);
 
     const result = JSON.parse(stdout);
+    console.log(`Semgrep parsed result - results count: ${result.results?.length || 0}`);
+    console.log(`Semgrep parsed result - errors count: ${result.errors?.length || 0}`);
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const findings: Finding[] = result.results.map((r: any) => {
       // Semgrepの重大度をマッピング
       let severity: 'HIGH' | 'MEDIUM' | 'LOW' = 'LOW';
-      if (r.extra?.severity === 'ERROR' || r.extra?.metadata?.category === 'security') {
+      if (r.extra?.severity === 'ERROR' || r.extra?.metadata?.impact === 'HIGH') {
         severity = 'HIGH';
-      } else if (r.extra?.severity === 'WARNING') {
+      } else if (r.extra?.severity === 'WARNING' || r.extra?.metadata?.impact === 'MEDIUM') {
         severity = 'MEDIUM';
       }
 
@@ -81,13 +88,20 @@ export async function runSemgrep(
       };
     });
 
+    console.log(`Semgrep final findings count: ${findings.length}`);
+    if (findings.length > 0) {
+      console.log(`First finding: ${JSON.stringify(findings[0], null, 2)}`);
+    }
+
     return {
       tool: 'semgrep',
       findings,
     };
   } catch (error: unknown) {
     // Semgrepがエラーを返した場合でも、部分的な結果があれば返す
-    const err = error as { stdout?: string };
+    const err = error as { stdout?: string; stderr?: string };
+    console.error(`Semgrep execution failed: ${err.stderr || 'Unknown error'}`);
+
     if (err.stdout) {
       try {
         const result = JSON.parse(err.stdout);
@@ -95,8 +109,8 @@ export async function runSemgrep(
           tool: 'semgrep',
           findings: result.results || [],
         };
-      } catch {
-        // JSON解析失敗
+      } catch (jsonError) {
+        console.error('Failed to parse Semgrep JSON output on error:', jsonError);
       }
     }
 
