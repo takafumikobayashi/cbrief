@@ -13,12 +13,21 @@ export async function formatWithGemini(
   policyContent: string,
   language: string
 ): Promise<AnalyzeResponse> {
-  // Initialize Google Generative AI with API key from environment
+  // Check if Gemini API key is available
   const apiKey = process.env.GEMINI_API_KEY || '';
   console.log(
     `[DEBUG] Gemini API Key in formatWithGemini - length: ${apiKey.length}, starts with: ${apiKey.substring(0, 10)}...`
   );
 
+  // If API key is missing, return fallback response immediately
+  if (!apiKey) {
+    console.warn('Gemini API key is missing. Using fallback response.');
+    return Promise.resolve(
+      createFallbackResponse(code, staticAnalysisResults, astData, policyContent, language)
+    );
+  }
+
+  // Initialize Google Generative AI with API key from environment
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({
     model: 'gemini-2.0-flash-lite',
@@ -28,17 +37,31 @@ export async function formatWithGemini(
     },
   });
 
-  // システムプロンプト - 極めて簡潔な出力を強制
-  const systemPrompt = `あなたは非エンジニア向けのコードレビュアーです。
-技術用語を避け、業務言語で説明してください。
-出力は必ず指定されたJSON形式で返してください。
+  // システムプロンプト - スキーマ厳守を強制
+  const systemPrompt = `You are a code reviewer for non-engineers. Avoid technical jargon and explain in business language.
 
-【重要な制約】
-- 各説明文は最大50文字以内に収めてください
-- 配列の要素数は最大3個まで
-- 冗長な説明は一切不要です
-- JSONは必ず完全な形式で出力してください
-- JSONファイルの場合は、設定内容や構造を業務言語で説明してください`;
+【CRITICAL RULES - MUST FOLLOW】
+1. You MUST output ONLY valid JSON that matches the EXACT schema provided
+2. Use ONLY these top-level fields: "summary", "risks", "next_actions", "artifacts"
+3. NEVER add custom fields like "説明", "設定", "構造", "制約", "リスク"
+4. NEVER output explanatory text before or after the JSON
+5. Field names MUST be in English as shown in the schema
+6. All text content (values) should be in Japanese
+7. If you cannot follow this schema exactly, output an empty risks array rather than creating custom fields
+
+Example of CORRECT structure:
+{
+  "summary": { "purpose": "...", "io": {...}, ... },
+  "risks": [...],
+  "next_actions": [...],
+  "artifacts": {...}
+}
+
+Example of INCORRECT structure (DO NOT DO THIS):
+{
+  "説明": "...",
+  "構造": {...}
+}`;
 
   // 静的解析結果を整形（最大3件まで）
   const findingsText = staticAnalysisResults
@@ -59,8 +82,8 @@ export async function formatWithGemini(
   // ポリシー情報を整形
   const policyText = policyContent ? `\n\nポリシー: ${policyContent.substring(0, 200)}` : '';
 
-  // ユーザープロンプト - 簡潔さを最優先
-  const userPrompt = `コード解析結果をJSON形式で出力してください。
+  // ユーザープロンプト - 具体的な分析を要求
+  const userPrompt = `以下のコードを分析して、JSON形式で出力してください。
 
 言語: ${language}
 
@@ -76,7 +99,8 @@ ${astText}
 ${findingsText || 'なし'}
 ${policyText}
 
-以下のJSON形式で出力（各フィールドは簡潔に）:
+必ずこのコードの実際の内容を分析して、以下のJSON形式で出力してください。
+例示ではなく、実際のコードに基づいた具体的な分析を行ってください：
 {
   "summary": {
     "purpose": "目的を100文字程度でこのコードが何をするものか、非エンジニアでもわかるように作りや役割を明確に説明",
@@ -120,6 +144,9 @@ ${policyText}
 - promptは具体的で、そのままAIに投げられる形式にしてください`;
 
   try {
+    console.log(`[DEBUG] Sending to Gemini - code length: ${code.length}, language: ${language}`);
+    console.log(`[DEBUG] User prompt (first 500 chars): ${userPrompt.substring(0, 500)}`);
+
     const result = await model.generateContent([{ text: systemPrompt }, { text: userPrompt }]);
 
     const response = result.response;
@@ -140,17 +167,33 @@ ${policyText}
         `[DEBUG] Extracted JSON without fence (first 500 chars): ${jsonText.substring(0, 500)}`
       );
       const analyzedData = JSON.parse(jsonText);
+
+      // Validate required fields
+      const requiredFields = ['summary', 'risks', 'next_actions', 'artifacts'];
+      const missingFields = requiredFields.filter((field) => !(field in analyzedData));
+
+      if (missingFields.length > 0) {
+        console.error(
+          `[DEBUG] Schema validation failed (no fence). Missing: ${missingFields.join(', ')}`
+        );
+        throw new Error(
+          `Gemini response missing required fields: ${missingFields.join(', ')}`
+        );
+      }
+
+      console.log('[DEBUG] Schema validation passed (no fence)');
+
       return {
         ...analyzedData,
-        detectedLanguage: language as 'javascript' | 'typescript' | 'python',
-      };
+        detectedLanguage: language as 'javascript' | 'typescript' | 'python' | 'json',
+      } as AnalyzeResponse;
     }
 
     const jsonText = jsonMatch[1];
     console.log(`[DEBUG] Extracted JSON (first 500 chars): ${jsonText.substring(0, 500)}`);
 
     // Try to parse JSON with better error handling
-    let analyzedData: AnalyzeResponse;
+    let analyzedData: any;
     try {
       analyzedData = JSON.parse(jsonText);
     } catch (parseError) {
@@ -163,10 +206,38 @@ ${policyText}
       throw new Error(`Failed to parse Gemini response: ${parseError}`);
     }
 
+    // Validate required fields in the response
+    const requiredFields = ['summary', 'risks', 'next_actions', 'artifacts'];
+    const missingFields = requiredFields.filter((field) => !(field in analyzedData));
+
+    if (missingFields.length > 0) {
+      console.error(
+        `[DEBUG] Schema validation failed. Missing required fields: ${missingFields.join(', ')}`
+      );
+      console.error('[DEBUG] Received keys:', Object.keys(analyzedData).join(', '));
+      console.error('[DEBUG] Full response:', JSON.stringify(analyzedData, null, 2));
+      throw new Error(
+        `Gemini response missing required fields: ${missingFields.join(', ')}. Received keys: ${Object.keys(analyzedData).join(', ')}`
+      );
+    }
+
+    // Validate summary structure
+    if (!analyzedData.summary || typeof analyzedData.summary !== 'object') {
+      console.error('[DEBUG] Invalid summary structure:', analyzedData.summary);
+      throw new Error('Gemini response has invalid summary structure');
+    }
+
+    if (!analyzedData.summary.purpose || !analyzedData.summary.io) {
+      console.error('[DEBUG] Summary missing required fields (purpose or io)');
+      throw new Error('Summary missing required fields');
+    }
+
+    console.log('[DEBUG] Schema validation passed');
+
     return {
       ...analyzedData,
       detectedLanguage: language as 'javascript' | 'typescript' | 'python' | 'json',
-    };
+    } as AnalyzeResponse;
   } catch (error) {
     console.error('Gemini API error:', error);
 
