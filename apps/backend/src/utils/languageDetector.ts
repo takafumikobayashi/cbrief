@@ -1,7 +1,7 @@
 /**
  * コードの言語を自動判定
  */
-export function detectLanguage(code: string): 'javascript' | 'typescript' | 'python' {
+export function detectLanguage(code: string): 'javascript' | 'typescript' | 'python' | 'json' {
   // TypeScript特有のキーワード・構文をチェック
   const tsPatterns = [
     /\binterface\s+\w+/,
@@ -36,9 +36,19 @@ export function detectLanguage(code: string): 'javascript' | 'typescript' | 'pyt
     /:\s*$/m, // インデントベースの構文（行末コロン）
   ];
 
+  // JSON特有のパターンをチェック
+  const jsonPatterns = [
+    /^\s*\{/, // 開始が{
+    /\}\s*$/, // 終了が}
+    /"\w+":\s*[{["\d]/, // "key": value形式
+    /"\w+":\s*null/, // null値
+    /"\w+":\s*(true|false)/, // boolean値
+  ];
+
   let tsScore = 0;
   let jsScore = 0;
   let pyScore = 0;
+  let jsonScore = 0;
 
   // TypeScriptパターンのマッチング
   tsPatterns.forEach((pattern) => {
@@ -61,8 +71,26 @@ export function detectLanguage(code: string): 'javascript' | 'typescript' | 'pyt
     }
   });
 
+  // JSONパターンのマッチング
+  jsonPatterns.forEach((pattern) => {
+    if (pattern.test(code)) {
+      jsonScore += 1;
+    }
+  });
+
+  // JSONバリデーション（パース可能かチェック）
+  try {
+    JSON.parse(code.trim());
+    jsonScore += 3; // JSONとしてパース可能なら大幅加点
+  } catch {
+    // パースできない場合はスコアを下げる
+    jsonScore = Math.max(0, jsonScore - 2);
+  }
+
   // スコアに基づいて判定
-  if (pyScore > jsScore && pyScore > tsScore) {
+  if (jsonScore >= 3) {
+    return 'json';
+  } else if (pyScore > jsScore && pyScore > tsScore) {
     return 'python';
   } else if (tsScore > jsScore) {
     return 'typescript';

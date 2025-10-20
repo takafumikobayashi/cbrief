@@ -26,11 +26,11 @@ analyzeRouter.post('/analyze', async (req, res) => {
     }
 
     // 1. 言語判定
-    let language: 'javascript' | 'typescript' | 'python';
+    let language: 'javascript' | 'typescript' | 'python' | 'json';
     if (request.languageHint === 'auto') {
       language = detectLanguage(request.content);
     } else {
-      language = request.languageHint as 'javascript' | 'typescript' | 'python';
+      language = request.languageHint as 'javascript' | 'typescript' | 'python' | 'json';
     }
 
     console.log(`Detected language: ${language}`);
@@ -52,7 +52,9 @@ analyzeRouter.post('/analyze', async (req, res) => {
     console.log('AST extraction temporarily disabled');
 
     // 4. 静的解析（Semgrep/Bandit/Secrets）
-    const staticAnalysisResults = await runStaticAnalysis(request.content, language);
+    // JSONの場合は静的解析をスキップ
+    const staticAnalysisResults =
+      language === 'json' ? [] : await runStaticAnalysis(request.content, language);
 
     console.log(
       `Static analysis complete. Found ${staticAnalysisResults.flatMap((r) => r.findings).length} issues`

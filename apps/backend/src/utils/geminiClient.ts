@@ -21,7 +21,7 @@ export async function formatWithGemini(
 
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({
-    model: 'gemini-2.5-flash',
+    model: 'gemini-2.0-flash-lite',
     generationConfig: {
       maxOutputTokens: 8192, // Increase token limit for longer responses
       temperature: 0.2, // Lower temperature for more consistent JSON output
@@ -37,7 +37,8 @@ export async function formatWithGemini(
 - 各説明文は最大50文字以内に収めてください
 - 配列の要素数は最大3個まで
 - 冗長な説明は一切不要です
-- JSONは必ず完全な形式で出力してください`;
+- JSONは必ず完全な形式で出力してください
+- JSONファイルの場合は、設定内容や構造を業務言語で説明してください`;
 
   // 静的解析結果を整形（最大3件まで）
   const findingsText = staticAnalysisResults
@@ -78,7 +79,7 @@ ${policyText}
 以下のJSON形式で出力（各フィールドは簡潔に）:
 {
   "summary": {
-    "purpose": "目的(50文字以内)",
+    "purpose": "目的を100文字程度でこのコードが何をするものか、非エンジニアでもわかるように作りや役割を明確に説明",
     "io": {
       "inputs": ["入力1", "入力2"],
       "outputs": ["出力1"]
@@ -102,18 +103,21 @@ ${policyText}
       "priority": 1
     }
   ],
-  "fixes": [],
   "next_actions": [
     {
       "title": "アクション(30文字以内)",
-      "effort": "S|M|L",
-      "priority": 1
+      "prompt": "AIに投げるプロンプト案(100文字以内)"
     }
   ],
   "artifacts": {
     "markdown": ""
   }
-}`;
+}
+
+【next_actionsの注意】
+- このツールはVibeCording（AIとの対話型開発）をサポートします
+- next_actionsには、ユーザーが次にAIに投げるべきプロンプト案を含めてください
+- promptは具体的で、そのままAIに投げられる形式にしてください`;
 
   try {
     const result = await model.generateContent([{ text: systemPrompt }, { text: userPrompt }]);
@@ -135,8 +139,11 @@ ${policyText}
       console.log(
         `[DEBUG] Extracted JSON without fence (first 500 chars): ${jsonText.substring(0, 500)}`
       );
-      const analyzedData: AnalyzeResponse = JSON.parse(jsonText);
-      return analyzedData;
+      const analyzedData = JSON.parse(jsonText);
+      return {
+        ...analyzedData,
+        detectedLanguage: language as 'javascript' | 'typescript' | 'python',
+      };
     }
 
     const jsonText = jsonMatch[1];
@@ -156,7 +163,10 @@ ${policyText}
       throw new Error(`Failed to parse Gemini response: ${parseError}`);
     }
 
-    return analyzedData;
+    return {
+      ...analyzedData,
+      detectedLanguage: language as 'javascript' | 'typescript' | 'python' | 'json',
+    };
   } catch (error) {
     console.error('Gemini API error:', error);
 
@@ -197,6 +207,7 @@ function createFallbackResponse(
     : '詳細な分析にはGemini APIキーが必要です';
 
   return {
+    detectedLanguage: language as 'javascript' | 'typescript' | 'python' | 'json',
     summary: {
       purpose: `${language}で書かれたコードの解析結果です。主な関数: ${astData.functions.join(', ')}`,
       io: {
@@ -209,12 +220,10 @@ function createFallbackResponse(
       scope_limits: ['Gemini APIが利用できないため、詳細な分析は行えませんでした。'],
     },
     risks,
-    fixes: [],
     next_actions: [
       {
-        title: 'Gemini APIキーを設定して詳細な分析を有効化',
-        effort: 'S',
-        priority: 1,
+        title: 'Gemini APIキーを設定',
+        prompt: 'Gemini APIキーを設定して、より詳細なコード分析を有効にしてください。',
       },
     ],
     artifacts: {

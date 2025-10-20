@@ -81,44 +81,26 @@ export interface Risk {
 }
 
 /**
- * 修正案
- */
-export interface Fix {
-  /** 修正タイトル */
-  title: string;
-  /** 差分表示（unified diff形式） */
-  diff: string;
-  /** 自然言語での説明 */
-  explanation: string;
-}
-
-/**
- * 次にとるべきアクション
+ * 次にとるべきアクション（VibeCording向けプロンプト提案）
  */
 export interface NextAction {
   /** タスクのタイトル */
   title: string;
-  /** 担当者（空欄可） */
-  owner?: string;
-  /** 優先度 */
-  priority: number;
-  /** 作業工数 */
-  effort: Effort;
-  /** 期限（空欄可） */
-  duedate?: string;
+  /** AIに投げるプロンプト案 */
+  prompt: string;
 }
 
 /**
  * 解析結果のレスポンス
  */
 export interface AnalyzeResponse {
+  /** 判定された言語 */
+  detectedLanguage: 'javascript' | 'typescript' | 'python' | 'json';
   /** 要約情報 */
   summary: Summary;
   /** リスク一覧 */
   risks: Risk[];
-  /** 修正案一覧 */
-  fixes: Fix[];
-  /** 次アクション一覧 */
+  /** 次アクション一覧（VibeCording向けプロンプト提案） */
   next_actions: NextAction[];
   /** エクスポート用アーティファクト */
   artifacts: {
