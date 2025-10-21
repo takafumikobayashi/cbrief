@@ -56,17 +56,24 @@ export async function runSemgrep(
   try {
     // Semgrep実行（autoモード：言語とセキュリティルールを自動選択）
     const command = `semgrep --config=auto --json --quiet "${tempFile}"`;
-    console.log(`Executing Semgrep: ${command}`);
+    // Debug logging (development only - do not log user code in production)
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`Executing Semgrep: ${command}`);
+    }
 
     const { stdout } = await execAsync(command, {
       maxBuffer: 10 * 1024 * 1024,
     });
 
-    console.log(`Semgrep raw output (first 500 chars): ${stdout.substring(0, 500)}`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`Semgrep raw output (first 500 chars): ${stdout.substring(0, 500)}`);
+    }
 
     const result = JSON.parse(stdout);
-    console.log(`Semgrep parsed result - results count: ${result.results?.length || 0}`);
-    console.log(`Semgrep parsed result - errors count: ${result.errors?.length || 0}`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`Semgrep parsed result - results count: ${result.results?.length || 0}`);
+      console.log(`Semgrep parsed result - errors count: ${result.errors?.length || 0}`);
+    }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const findings: Finding[] = result.results.map((r: any) => {
@@ -88,9 +95,11 @@ export async function runSemgrep(
       };
     });
 
-    console.log(`Semgrep final findings count: ${findings.length}`);
-    if (findings.length > 0) {
-      console.log(`First finding: ${JSON.stringify(findings[0], null, 2)}`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`Semgrep final findings count: ${findings.length}`);
+      if (findings.length > 0) {
+        console.log(`First finding: ${JSON.stringify(findings[0], null, 2)}`);
+      }
     }
 
     return {
@@ -100,7 +109,9 @@ export async function runSemgrep(
   } catch (error: unknown) {
     // Semgrepがエラーを返した場合でも、部分的な結果があれば返す
     const err = error as { stdout?: string; stderr?: string };
-    console.error(`Semgrep execution failed: ${err.stderr || 'Unknown error'}`);
+    if (process.env.NODE_ENV === 'development') {
+      console.error(`Semgrep execution failed: ${err.stderr || 'Unknown error'}`);
+    }
 
     if (err.stdout) {
       try {
@@ -110,7 +121,9 @@ export async function runSemgrep(
           findings: result.results || [],
         };
       } catch (jsonError) {
-        console.error('Failed to parse Semgrep JSON output on error:', jsonError);
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Failed to parse Semgrep JSON output on error:', jsonError);
+        }
       }
     }
 
