@@ -179,9 +179,28 @@ export async function runBandit(code: string): Promise<StaticAnalysisResult> {
     if (err.stdout) {
       try {
         const result = JSON.parse(err.stdout);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const findings: Finding[] = (result.results || []).map((r: any) => {
+          // Banditの重大度をマッピング
+          let severity: 'HIGH' | 'MEDIUM' | 'LOW' = 'LOW';
+          if (r.issue_severity === 'HIGH') {
+            severity = 'HIGH';
+          } else if (r.issue_severity === 'MEDIUM') {
+            severity = 'MEDIUM';
+          }
+
+          return {
+            rule: r.test_id || 'unknown',
+            severity,
+            file: path.basename(tempFile),
+            line: r.line_number || 0,
+            message: r.issue_text || '',
+            excerpt: r.code || '',
+          };
+        });
         return {
           tool: 'bandit',
-          findings: result.results || [],
+          findings,
         };
       } catch {
         // JSON解析失敗
