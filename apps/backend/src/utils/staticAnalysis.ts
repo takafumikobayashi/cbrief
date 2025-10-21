@@ -137,6 +137,32 @@ export async function runSemgrep(
 }
 
 /**
+ * BanditのJSON出力をFinding型にマッピングする共通ヘルパー
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapBanditFindings(results: any[], tempFile: string): Finding[] {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return results.map((r: any) => {
+    // Banditの重大度をマッピング
+    let severity: 'HIGH' | 'MEDIUM' | 'LOW' = 'LOW';
+    if (r.issue_severity === 'HIGH') {
+      severity = 'HIGH';
+    } else if (r.issue_severity === 'MEDIUM') {
+      severity = 'MEDIUM';
+    }
+
+    return {
+      rule: r.test_id || 'unknown',
+      severity,
+      file: path.basename(tempFile),
+      line: r.line_number || 0,
+      message: r.issue_text || '',
+      excerpt: r.code || '',
+    };
+  });
+}
+
+/**
  * Banditを実行してPythonのセキュリティ問題を検出
  */
 export async function runBandit(code: string): Promise<StaticAnalysisResult> {
@@ -149,25 +175,7 @@ export async function runBandit(code: string): Promise<StaticAnalysisResult> {
     });
 
     const result = JSON.parse(stdout);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const findings: Finding[] = result.results.map((r: any) => {
-      // Banditの重大度をマッピング
-      let severity: 'HIGH' | 'MEDIUM' | 'LOW' = 'LOW';
-      if (r.issue_severity === 'HIGH') {
-        severity = 'HIGH';
-      } else if (r.issue_severity === 'MEDIUM') {
-        severity = 'MEDIUM';
-      }
-
-      return {
-        rule: r.test_id || 'unknown',
-        severity,
-        file: path.basename(tempFile),
-        line: r.line_number || 0,
-        message: r.issue_text || '',
-        excerpt: r.code || '',
-      };
-    });
+    const findings = mapBanditFindings(result.results, tempFile);
 
     return {
       tool: 'bandit',
@@ -179,25 +187,7 @@ export async function runBandit(code: string): Promise<StaticAnalysisResult> {
     if (err.stdout) {
       try {
         const result = JSON.parse(err.stdout);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const findings: Finding[] = (result.results || []).map((r: any) => {
-          // Banditの重大度をマッピング
-          let severity: 'HIGH' | 'MEDIUM' | 'LOW' = 'LOW';
-          if (r.issue_severity === 'HIGH') {
-            severity = 'HIGH';
-          } else if (r.issue_severity === 'MEDIUM') {
-            severity = 'MEDIUM';
-          }
-
-          return {
-            rule: r.test_id || 'unknown',
-            severity,
-            file: path.basename(tempFile),
-            line: r.line_number || 0,
-            message: r.issue_text || '',
-            excerpt: r.code || '',
-          };
-        });
+        const findings = mapBanditFindings(result.results || [], tempFile);
         return {
           tool: 'bandit',
           findings,
