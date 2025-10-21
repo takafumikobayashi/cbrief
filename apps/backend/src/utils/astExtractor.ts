@@ -38,11 +38,23 @@ async function initializeParser(): Promise<void> {
   // Despite the type definitions suggesting a default export, the runtime module
   // actually exports Parser and Language as named exports
   const TreeSitter = await import('web-tree-sitter');
-  const Parser = (TreeSitter as { Parser: typeof WebTreeSitterParser & { init(): Promise<void> } })
-    .Parser;
+  const Parser = (
+    TreeSitter as {
+      Parser: typeof WebTreeSitterParser & {
+        init(options?: { locateFile?: (file: string) => string }): Promise<void>;
+      };
+    }
+  ).Parser;
   const Language = TreeSitter.Language;
 
-  await Parser.init();
+  // Initialize Parser with explicit WASM path for Node.js environment
+  // The locateFile callback tells tree-sitter where to find tree-sitter.wasm
+  await Parser.init({
+    locateFile: (file: string) => {
+      // In Node.js, resolve the WASM file from node_modules
+      return path.join(__dirname, '../../node_modules/web-tree-sitter', file);
+    },
+  });
   parser = new Parser();
 
   for (const lang in languageWasmPaths) {
