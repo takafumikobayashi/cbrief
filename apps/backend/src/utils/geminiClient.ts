@@ -15,9 +15,11 @@ export async function formatWithGemini(
 ): Promise<AnalyzeResponse> {
   // Check if Gemini API key is available
   const apiKey = process.env.GEMINI_API_KEY || '';
-  console.log(
-    `[DEBUG] Gemini API Key in formatWithGemini - length: ${apiKey.length}, starts with: ${apiKey.substring(0, 10)}...`
-  );
+
+  // Debug logging (development only - do not log API keys in production)
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`[DEBUG] Gemini API Key status: ${apiKey ? 'present' : 'missing'}`);
+  }
 
   // If API key is missing, return fallback response immediately
   if (!apiKey) {
@@ -176,9 +178,7 @@ ${policyText}
         console.error(
           `[DEBUG] Schema validation failed (no fence). Missing: ${missingFields.join(', ')}`
         );
-        throw new Error(
-          `Gemini response missing required fields: ${missingFields.join(', ')}`
-        );
+        throw new Error(`Gemini response missing required fields: ${missingFields.join(', ')}`);
       }
 
       console.log('[DEBUG] Schema validation passed (no fence)');
@@ -193,9 +193,9 @@ ${policyText}
     console.log(`[DEBUG] Extracted JSON (first 500 chars): ${jsonText.substring(0, 500)}`);
 
     // Try to parse JSON with better error handling
-    let analyzedData: any;
+    let analyzedData: Omit<AnalyzeResponse, 'detectedLanguage'>;
     try {
-      analyzedData = JSON.parse(jsonText);
+      analyzedData = JSON.parse(jsonText) as Omit<AnalyzeResponse, 'detectedLanguage'>;
     } catch (parseError) {
       // If JSON parse fails, log the error and re-throw
       console.error('[DEBUG] JSON parse failed:', parseError);

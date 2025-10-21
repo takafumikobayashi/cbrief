@@ -34,13 +34,15 @@ const languages: { [key: string]: Language } = {};
 async function initializeParser(): Promise<void> {
   if (parser) return;
 
-  const WebTreeSitter = await import('web-tree-sitter');
-  await WebTreeSitter.Parser.init();
-  parser = new WebTreeSitter.Parser();
+  // Import Parser and Language as named exports from web-tree-sitter
+  const { Parser, Language } = await import('web-tree-sitter');
+  await Parser.init();
+  parser = new Parser();
 
   for (const lang in languageWasmPaths) {
     const wasmPath = languageWasmPaths[lang as keyof typeof languageWasmPaths];
-    languages[lang] = await WebTreeSitter.Language.load(wasmPath);
+    // Load language grammars
+    languages[lang] = await Language.load(wasmPath);
   }
 }
 
