@@ -39,6 +39,32 @@ async function cleanupTempFile(filePath: string): Promise<void> {
 }
 
 /**
+ * SemgrepのJSON出力をFinding型にマッピングする共通ヘルパー
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapSemgrepFindings(results: any[], tempFile: string, code: string): Finding[] {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return results.map((r: any) => {
+    // Semgrepの重大度をマッピング
+    let severity: 'HIGH' | 'MEDIUM' | 'LOW' = 'LOW';
+    if (r.extra?.severity === 'ERROR' || r.extra?.metadata?.impact === 'HIGH') {
+      severity = 'HIGH';
+    } else if (r.extra?.severity === 'WARNING' || r.extra?.metadata?.impact === 'MEDIUM') {
+      severity = 'MEDIUM';
+    }
+
+    return {
+      rule: r.check_id || 'unknown',
+      severity,
+      file: path.basename(tempFile),
+      line: r.start?.line || 0,
+      message: r.extra?.message || r.check_id,
+      excerpt: r.extra?.lines || code.split('\n')[r.start?.line - 1] || '',
+    };
+  });
+}
+
+/**
  * Semgrepを実行してセキュリティ問題を検出
  */
 export async function runSemgrep(
@@ -75,25 +101,7 @@ export async function runSemgrep(
       console.log(`Semgrep parsed result - errors count: ${result.errors?.length || 0}`);
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const findings: Finding[] = result.results.map((r: any) => {
-      // Semgrepの重大度をマッピング
-      let severity: 'HIGH' | 'MEDIUM' | 'LOW' = 'LOW';
-      if (r.extra?.severity === 'ERROR' || r.extra?.metadata?.impact === 'HIGH') {
-        severity = 'HIGH';
-      } else if (r.extra?.severity === 'WARNING' || r.extra?.metadata?.impact === 'MEDIUM') {
-        severity = 'MEDIUM';
-      }
-
-      return {
-        rule: r.check_id || 'unknown',
-        severity,
-        file: path.basename(tempFile),
-        line: r.start?.line || 0,
-        message: r.extra?.message || r.check_id,
-        excerpt: r.extra?.lines || code.split('\n')[r.start?.line - 1] || '',
-      };
-    });
+    const findings = mapSemgrepFindings(result.results, tempFile, code);
 
     if (process.env.NODE_ENV === 'development') {
       console.log(`Semgrep final findings count: ${findings.length}`);
@@ -116,9 +124,10 @@ export async function runSemgrep(
     if (err.stdout) {
       try {
         const result = JSON.parse(err.stdout);
+        const findings = mapSemgrepFindings(result.results || [], tempFile, code);
         return {
           tool: 'semgrep',
-          findings: result.results || [],
+          findings,
         };
       } catch (jsonError) {
         if (process.env.NODE_ENV === 'development') {
