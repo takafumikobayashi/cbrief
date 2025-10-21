@@ -146,15 +146,20 @@ ${policyText}
 - promptは具体的で、そのままAIに投げられる形式にしてください`;
 
   try {
-    console.log(`[DEBUG] Sending to Gemini - code length: ${code.length}, language: ${language}`);
-    console.log(`[DEBUG] User prompt (first 500 chars): ${userPrompt.substring(0, 500)}`);
+    // Debug logging (development only - do not log user code or responses in production)
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[DEBUG] Sending to Gemini - code length: ${code.length}, language: ${language}`);
+      console.log(`[DEBUG] User prompt (first 500 chars): ${userPrompt.substring(0, 500)}`);
+    }
 
     const result = await model.generateContent([{ text: systemPrompt }, { text: userPrompt }]);
 
     const response = result.response;
     const text = response.text();
 
-    console.log(`[DEBUG] Gemini raw response (first 1000 chars): ${text.substring(0, 1000)}`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[DEBUG] Gemini raw response (first 1000 chars): ${text.substring(0, 1000)}`);
+    }
 
     // JSON部分を抽出（```json ... ``` の中身を取得）
     const jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/);
@@ -165,9 +170,11 @@ ${policyText}
         throw new Error('Gemini response does not contain valid JSON');
       }
       const jsonText = jsonOnlyMatch[0];
-      console.log(
-        `[DEBUG] Extracted JSON without fence (first 500 chars): ${jsonText.substring(0, 500)}`
-      );
+      if (process.env.NODE_ENV === 'development') {
+        console.log(
+          `[DEBUG] Extracted JSON without fence (first 500 chars): ${jsonText.substring(0, 500)}`
+        );
+      }
       const analyzedData = JSON.parse(jsonText);
 
       // Validate required fields
@@ -175,13 +182,17 @@ ${policyText}
       const missingFields = requiredFields.filter((field) => !(field in analyzedData));
 
       if (missingFields.length > 0) {
-        console.error(
-          `[DEBUG] Schema validation failed (no fence). Missing: ${missingFields.join(', ')}`
-        );
+        if (process.env.NODE_ENV === 'development') {
+          console.error(
+            `[DEBUG] Schema validation failed (no fence). Missing: ${missingFields.join(', ')}`
+          );
+        }
         throw new Error(`Gemini response missing required fields: ${missingFields.join(', ')}`);
       }
 
-      console.log('[DEBUG] Schema validation passed (no fence)');
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[DEBUG] Schema validation passed (no fence)');
+      }
 
       return {
         ...analyzedData,
@@ -190,19 +201,23 @@ ${policyText}
     }
 
     const jsonText = jsonMatch[1];
-    console.log(`[DEBUG] Extracted JSON (first 500 chars): ${jsonText.substring(0, 500)}`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[DEBUG] Extracted JSON (first 500 chars): ${jsonText.substring(0, 500)}`);
+    }
 
     // Try to parse JSON with better error handling
     let analyzedData: Omit<AnalyzeResponse, 'detectedLanguage'>;
     try {
       analyzedData = JSON.parse(jsonText) as Omit<AnalyzeResponse, 'detectedLanguage'>;
     } catch (parseError) {
-      // If JSON parse fails, log the error and re-throw
-      console.error('[DEBUG] JSON parse failed:', parseError);
-      console.error(
-        '[DEBUG] Problematic JSON (last 500 chars):',
-        jsonText.substring(Math.max(0, jsonText.length - 500))
-      );
+      // If JSON parse fails, log the error and re-throw (development only)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('[DEBUG] JSON parse failed:', parseError);
+        console.error(
+          '[DEBUG] Problematic JSON (last 500 chars):',
+          jsonText.substring(Math.max(0, jsonText.length - 500))
+        );
+      }
       throw new Error(`Failed to parse Gemini response: ${parseError}`);
     }
 
@@ -211,11 +226,13 @@ ${policyText}
     const missingFields = requiredFields.filter((field) => !(field in analyzedData));
 
     if (missingFields.length > 0) {
-      console.error(
-        `[DEBUG] Schema validation failed. Missing required fields: ${missingFields.join(', ')}`
-      );
-      console.error('[DEBUG] Received keys:', Object.keys(analyzedData).join(', '));
-      console.error('[DEBUG] Full response:', JSON.stringify(analyzedData, null, 2));
+      if (process.env.NODE_ENV === 'development') {
+        console.error(
+          `[DEBUG] Schema validation failed. Missing required fields: ${missingFields.join(', ')}`
+        );
+        console.error('[DEBUG] Received keys:', Object.keys(analyzedData).join(', '));
+        console.error('[DEBUG] Full response:', JSON.stringify(analyzedData, null, 2));
+      }
       throw new Error(
         `Gemini response missing required fields: ${missingFields.join(', ')}. Received keys: ${Object.keys(analyzedData).join(', ')}`
       );
@@ -223,16 +240,22 @@ ${policyText}
 
     // Validate summary structure
     if (!analyzedData.summary || typeof analyzedData.summary !== 'object') {
-      console.error('[DEBUG] Invalid summary structure:', analyzedData.summary);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('[DEBUG] Invalid summary structure:', analyzedData.summary);
+      }
       throw new Error('Gemini response has invalid summary structure');
     }
 
     if (!analyzedData.summary.purpose || !analyzedData.summary.io) {
-      console.error('[DEBUG] Summary missing required fields (purpose or io)');
+      if (process.env.NODE_ENV === 'development') {
+        console.error('[DEBUG] Summary missing required fields (purpose or io)');
+      }
       throw new Error('Summary missing required fields');
     }
 
-    console.log('[DEBUG] Schema validation passed');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[DEBUG] Schema validation passed');
+    }
 
     return {
       ...analyzedData,

@@ -1,12 +1,17 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
-const policiesDir = path.join(process.cwd(), 'policies');
+const defaultPoliciesDir = path.join(process.cwd(), 'policies');
 
 /**
  * Reads policy files from the /policies directory.
+ * @param policyFiles - Array of policy file names to load
+ * @param policiesDir - Optional custom policies directory (primarily for testing)
  */
-export async function loadPolicies(policyFiles: string[]): Promise<string> {
+export async function loadPolicies(
+  policyFiles: string[],
+  policiesDir: string = defaultPoliciesDir
+): Promise<string> {
   if (!policyFiles || policyFiles.length === 0) {
     return '';
   }
