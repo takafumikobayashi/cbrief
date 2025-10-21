@@ -34,13 +34,20 @@ const languages: { [key: string]: Language } = {};
 async function initializeParser(): Promise<void> {
   if (parser) return;
 
-  const WebTreeSitter = await import('web-tree-sitter');
-  await WebTreeSitter.Parser.init();
-  parser = new WebTreeSitter.Parser();
+  // Import the web-tree-sitter module
+  // Despite the type definitions suggesting a default export, the runtime module
+  // actually exports Parser and Language as named exports
+  const TreeSitter = await import('web-tree-sitter');
+  const Parser = (TreeSitter as { Parser: typeof WebTreeSitterParser & { init(): Promise<void> } })
+    .Parser;
+  const Language = TreeSitter.Language;
+
+  await Parser.init();
+  parser = new Parser();
 
   for (const lang in languageWasmPaths) {
     const wasmPath = languageWasmPaths[lang as keyof typeof languageWasmPaths];
-    languages[lang] = await WebTreeSitter.Language.load(wasmPath);
+    languages[lang] = await Language.load(wasmPath);
   }
 }
 

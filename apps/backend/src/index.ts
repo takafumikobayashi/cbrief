@@ -7,11 +7,10 @@ import express from 'express';
 import cors from 'cors';
 import { analyzeRouter } from './api/analyze';
 
-// Debug: Check if API key is loaded
-console.log(
-  'GEMINI_API_KEY loaded:',
-  process.env.GEMINI_API_KEY ? `${process.env.GEMINI_API_KEY.substring(0, 10)}...` : 'NOT LOADED'
-);
+// Debug: Check if API key is loaded (development only)
+if (process.env.NODE_ENV === 'development') {
+  console.log('GEMINI_API_KEY status:', process.env.GEMINI_API_KEY ? 'present' : 'missing');
+}
 
 const app = express();
 const port = process.env.PORT || 3001;
