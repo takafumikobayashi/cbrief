@@ -41,6 +41,9 @@ pnpm --filter @cbrief/backend dev   # http://localhost:3001
 # 全パッケージビルド（依存関係を自動解決）
 pnpm build
 
+# テスト（バックエンドのみ）
+pnpm --filter @cbrief/backend test
+
 # リント（全パッケージ）
 pnpm lint
 
@@ -93,11 +96,13 @@ cbrief/
 
 - Express + TypeScript
 - `/api/analyze` エンドポイント（POST）
-- 現在はモックレスポンス、Sprint 1で実装予定:
-  1. 言語判定
-  2. 静的解析（Semgrep/ESLint/Bandit/Secrets）
-  3. LLM整形（Gemini 1.5 Flash）
-  4. JSONスキーマ検証
+- 実装済み（Sprint 1完了）:
+  1. 言語判定 (`utils/languageDetector.ts`)
+  2. 静的解析 (`utils/staticAnalysis.ts`) - Semgrep/Bandit/Secrets
+  3. LLM整形 (`utils/geminiClient.ts`) - Gemini 2.0 Flash Lite
+  4. JSONスキーマ検証 (`@cbrief/shared`)
+  5. ポリシーローダー (`utils/policyLoader.ts`)
+- 注意: AST抽出 (`utils/astExtractor.ts`) は一時的に無効化中（web-tree-sitter設定が必要）
 
 **共通パッケージ (packages/shared):**
 
@@ -115,8 +120,8 @@ Request:
 {
   "languageHint": "auto|javascript|typescript|python",
   "content": "<解析対象コード>",
-  "policies": ["logging.md"],  // 将来実装
-  "save": false                 // MVPでは常にfalse
+  "policies": ["logging.md"], // 将来実装
+  "save": false // MVPでは常にfalse
 }
 ```
 
@@ -124,10 +129,18 @@ Response:
 
 ```json
 {
-  "summary": { /* 要約情報 */ },
-  "risks": [ /* リスク一覧 */ ],
-  "fixes": [ /* 修正案 */ ],
-  "next_actions": [ /* 次アクション */ ],
+  "summary": {
+    /* 要約情報 */
+  },
+  "risks": [
+    /* リスク一覧 */
+  ],
+  "fixes": [
+    /* 修正案 */
+  ],
+  "next_actions": [
+    /* 次アクション */
+  ],
   "artifacts": { "markdown": "..." }
 }
 ```
@@ -184,7 +197,7 @@ PRD §10のマッピング定義に従う:
 
 各リスクには必ず `evidence` フィールド（ルールID/行番号/抜粋）を付与。
 
-### LLMプロンプト設計（Sprint 1以降）
+### LLMプロンプト設計
 
 PRD §12に基づく:
 
@@ -193,11 +206,49 @@ PRD §12に基づく:
 - 出力は必ずJSONスキーマに準拠
 - 語調: 比喩は短く、専門用語は脚注
 
+**重要な実装ノート**:
+
+- システムプロンプトで必須フィールド（`summary`, `risks`, `next_actions`, `artifacts`）を明示
+- カスタムフィールドの追加を禁止（例: `説明`, `構造` 等の日本語フィールド名）
+- JSON抽出は `json` フェンス内またはプレーンJSON両方に対応
+- スキーマ違反時は詳細エラーログを出力（開発環境のみ）
+
 ### 非機能要件
 
 - **応答時間**: 3000行でP50≤12s, P95≤25s（NFR-001）
 - **セキュリティ**: デフォルト無保存、TLS 1.2+（NFR-003）
 - **プライバシー**: PII検出でマスク提案（NFR-004）
+
+## 主要コンポーネント
+
+### バックエンド解析パイプライン
+
+解析は以下の順序で実行されます（`apps/backend/src/api/analyze.ts`）:
+
+1. **言語判定**: `detectLanguage()` - コード内容から言語を自動判定
+2. **ポリシー読み込み**: `loadPolicies()` - `policies/`ディレクトリから社内ポリシーを読み込み
+3. **AST抽出**: 現在無効化中（`web-tree-sitter`設定が必要）
+4. **静的解析**: `runStaticAnalysis()` - 以下のツールを言語に応じて実行:
+   - Semgrep（全言語対応）
+   - Bandit（Pythonのみ）
+   - Secrets検出（正規表現ベース）
+5. **LLM整形**: `formatWithGemini()` - Gemini 2.0 Flash Liteで業務言語に翻訳
+6. **レスポンス返却**: 型安全な `AnalyzeResponse` オブジェクト
+
+### 静的解析の実装詳細 (`utils/staticAnalysis.ts`)
+
+- **一時ファイル管理**: コードを一時ファイルに書き込み、解析後に自動削除
+- **Finding型への統一**: 各ツールの出力を共通の `Finding` 型にマッピング
+- **エラーハンドリング**: ツール実行失敗時も部分的な結果を返す
+- **重大度マッピング**: 各ツールの重大度レベルを `HIGH/MEDIUM/LOW` に正規化
+
+### Gemini LLM統合 (`utils/geminiClient.ts`)
+
+- **モデル**: `gemini-2.0-flash-lite` を使用
+- **プロンプト設計**: システムプロンプトでJSONスキーマ厳守を強制
+- **フォールバック**: API key未設定時やエラー時は静的解析結果のみで基本レスポンスを生成
+- **デバッグログ**: 開発環境でのみ詳細ログを出力（本番環境でユーザーコード漏洩を防止）
+- **VibeCordingサポート**: `next_actions` に次にAIに投げるべきプロンプト案を含める
 
 ## Sprint計画
 
@@ -208,16 +259,18 @@ PRD §12に基づく:
 - ✅ `/analyze` モックエンドポイント
 - ✅ JSONスキーマ定義
 
-### Sprint 1（1週間）
+### Sprint 1（完了）
 
-- [ ] Semgrep/ESLint/Bandit/Secrets統合
-- [ ] Gemini 1.5 Flash連携
-- [ ] LLM整形ロジック実装
-- [ ] Markdown/PDF出力
+- ✅ Semgrep/Bandit/Secrets統合
+- ✅ Gemini 2.0 Flash Lite連携
+- ✅ LLM整形ロジック実装
+- ✅ Markdown出力
+- ✅ ポリシーローダー
 
-### Sprint 2（1週間）
+### Sprint 2（予定）
 
-- [ ] ポリシーRAG（`policies/*.md`）
+- [ ] AST抽出の有効化（web-tree-sitter設定）
+- [ ] PDF出力機能
 - [ ] Jira出力（CSV or REST）
 - [ ] ユーザーテスト
 - [ ] プロンプト調整
@@ -226,9 +279,60 @@ PRD §12に基づく:
 
 `.env.example` を参照:
 
-- `GEMINI_API_KEY`: Gemini API キー（必須）
+- `GEMINI_API_KEY`: Gemini API キー（必須 - 未設定時はフォールバックレスポンスを返す）
 - `PORT`: バックエンドポート（デフォルト: 3001）
 - `NEXT_PUBLIC_API_URL`: フロントエンドからのAPI URL
+- `NODE_ENV`: 環境（`development` の場合、詳細なデバッグログを出力）
+
+## デバッグとトラブルシューティング
+
+### バックエンドのデバッグログ
+
+開発環境（`NODE_ENV=development`）では、以下の詳細ログが出力されます:
+
+- Gemini API keyの存在確認（値自体はログに出力しない）
+- 言語判定結果
+- 静的解析の実行コマンドと結果
+- Geminiへのリクエスト内容（プロンプトの最初の500文字）
+- Geminiからのレスポンス（最初の1000文字）
+- JSONスキーマ検証の詳細
+
+**重要**: 本番環境では、ユーザーコードやAPIキーが誤ってログに含まれないよう、デバッグログは無効化されます。
+
+### よくある問題
+
+**1. Semgrepが結果を返さない**:
+
+- Semgrepは `--config=auto` で実行され、セキュリティルールのみを適用
+- 問題がない場合は空の結果配列を返す（これは正常動作）
+- デバッグログで `findings count` を確認
+
+**2. Gemini APIエラー**:
+
+- API key未設定: フォールバックレスポンスを自動生成
+- レート制限: エラーログに表示され、フォールバックに切り替え
+- JSONスキーマ違反: 必須フィールドやカスタムフィールドに関する詳細エラーを確認
+
+**3. AST抽出が無効**:
+
+- `web-tree-sitter`のWASMファイルパス設定が必要
+- 現在は意図的に無効化中（`apps/backend/src/api/analyze.ts:46`）
+- AST抽出なしでも解析は実行可能
+
+### テストの実行
+
+```bash
+# バックエンドのユニットテスト
+pnpm --filter @cbrief/backend test
+
+# 特定のテストファイルのみ実行
+cd apps/backend
+pnpm test -- languageDetector.test.ts
+
+# カバレッジ付きで実行
+cd apps/backend
+pnpm test -- --coverage
+```
 
 ## デプロイ
 
