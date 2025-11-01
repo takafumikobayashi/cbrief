@@ -7,7 +7,6 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 
 export default function Home() {
   const [code, setCode] = useState('');
-  const [language, setLanguage] = useState<'auto' | 'javascript' | 'typescript' | 'python'>('auto');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<AnalyzeResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -23,7 +22,7 @@ export default function Home() {
 
     try {
       const request: AnalyzeRequest = {
-        languageHint: language,
+        languageHint: 'auto',
         content: code,
         policies: [],
         save: false, // MVPでは常にfalse
@@ -49,6 +48,12 @@ export default function Home() {
     }
   };
 
+  const handleClear = () => {
+    setCode('');
+    setResult(null);
+    setError(null);
+  };
+
   return (
     <main className="min-h-screen p-8 dark:bg-gray-900 transition-colors">
       <div className="max-w-7xl mx-auto">
@@ -68,28 +73,6 @@ export default function Home() {
             <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">
               コード入力
             </h2>
-
-            <div className="mb-4">
-              <label
-                htmlFor="language"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-              >
-                言語
-              </label>
-              <select
-                id="language"
-                value={language}
-                onChange={(e) =>
-                  setLanguage(e.target.value as 'auto' | 'javascript' | 'typescript' | 'python')
-                }
-                className="input"
-              >
-                <option value="auto">自動判定</option>
-                <option value="javascript">JavaScript</option>
-                <option value="typescript">TypeScript</option>
-                <option value="python">Python</option>
-              </select>
-            </div>
 
             <div className="mb-4">
               <label
@@ -115,9 +98,14 @@ export default function Home() {
                 </label>
               </div>
 
-              <button onClick={handleAnalyze} disabled={isAnalyzing} className="btn-primary">
-                {isAnalyzing ? '解析中...' : '分析'}
-              </button>
+              <div className="flex gap-2">
+                <button onClick={handleClear} className="btn-secondary">
+                  クリア
+                </button>
+                <button onClick={handleAnalyze} disabled={isAnalyzing} className="btn-primary">
+                  {isAnalyzing ? '解析中...' : '分析'}
+                </button>
+              </div>
             </div>
 
             {error && (

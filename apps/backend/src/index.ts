@@ -1,9 +1,16 @@
+import dotenv from 'dotenv';
+
+// Load environment variables first, before any other imports
+dotenv.config();
+
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import { analyzeRouter } from './api/analyze';
 
-dotenv.config();
+// Debug: Check if API key is loaded (development only)
+if (process.env.NODE_ENV === 'development') {
+  console.log('GEMINI_API_KEY status:', process.env.GEMINI_API_KEY ? 'present' : 'missing');
+}
 
 const app = express();
 const port = process.env.PORT || 3001;

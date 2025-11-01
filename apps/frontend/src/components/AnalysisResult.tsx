@@ -4,7 +4,7 @@ import { useState } from 'react';
 import type { AnalyzeResponse } from '@cbrief/shared';
 import { CodeBlock } from './CodeBlock';
 
-type Tab = 'summary' | 'risks' | 'fixes' | 'actions';
+type Tab = 'summary' | 'risks' | 'actions';
 
 interface Props {
   result: AnalyzeResponse;
@@ -16,7 +16,6 @@ export function AnalysisResult({ result }: Props) {
   const tabs: { id: Tab; label: string }[] = [
     { id: 'summary', label: '要約' },
     { id: 'risks', label: 'リスク' },
-    { id: 'fixes', label: '修正案' },
     { id: 'actions', label: '次アクション' },
   ];
 
@@ -55,7 +54,6 @@ export function AnalysisResult({ result }: Props) {
       <div className="overflow-y-auto max-h-[600px]">
         {activeTab === 'summary' && <SummaryTab result={result} />}
         {activeTab === 'risks' && <RisksTab result={result} />}
-        {activeTab === 'fixes' && <FixesTab result={result} />}
         {activeTab === 'actions' && <ActionsTab result={result} />}
       </div>
 
@@ -73,9 +71,43 @@ export function AnalysisResult({ result }: Props) {
 }
 
 function SummaryTab({ result }: Props) {
-  const { summary } = result;
+  const { summary, detectedLanguage } = result;
+
+  const languageConfig = {
+    javascript: {
+      name: 'JavaScript',
+      color: '#f1e05a',
+    },
+    typescript: {
+      name: 'TypeScript',
+      color: '#3178c6',
+    },
+    python: {
+      name: 'Python',
+      color: '#3572A5',
+    },
+    json: {
+      name: 'JSON',
+      color: '#292929',
+    },
+  };
+
+  const currentLanguage = languageConfig[detectedLanguage];
+
   return (
     <div className="space-y-4">
+      <Section title="判定された言語">
+        <div className="flex items-center gap-2">
+          <span
+            className="inline-block w-3 h-3 rounded-full"
+            style={{ backgroundColor: currentLanguage.color }}
+          />
+          <span className="font-medium text-gray-900 dark:text-gray-100">
+            {currentLanguage.name}
+          </span>
+        </div>
+      </Section>
+
       <Section title="目的">
         <p>{summary.purpose}</p>
       </Section>
@@ -176,38 +208,40 @@ function RisksTab({ result }: Props) {
   );
 }
 
-function FixesTab({ result }: Props) {
-  return (
-    <div className="space-y-4">
-      {result.fixes.map((fix, i) => (
-        <div key={i} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-          <h3 className="font-semibold mb-2 text-gray-900 dark:text-gray-100">{fix.title}</h3>
-          <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">{fix.explanation}</p>
-          <CodeBlock code={fix.diff} language="diff" className="text-xs" />
-        </div>
-      ))}
-    </div>
-  );
-}
-
 function ActionsTab({ result }: Props) {
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+
+  const copyPrompt = (prompt: string, index: number) => {
+    navigator.clipboard.writeText(prompt);
+    setCopiedIndex(index);
+    setTimeout(() => setCopiedIndex(null), 2000);
+  };
+
   return (
     <div className="space-y-3">
-      {result.next_actions.map((action, i) => (
-        <div key={i} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-          <div className="flex items-start justify-between">
-            <h3 className="font-semibold text-gray-900 dark:text-gray-100">{action.title}</h3>
-            <span className="text-xs font-medium px-2 py-1 rounded bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200">
-              優先度 {action.priority}
-            </span>
+      {result.next_actions.length === 0 ? (
+        <p className="text-gray-500 dark:text-gray-400 text-center py-8">
+          次アクションの提案はありません
+        </p>
+      ) : (
+        result.next_actions.map((action, i) => (
+          <div
+            key={i}
+            className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:border-primary-500 dark:hover:border-primary-600 transition-colors"
+          >
+            <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">{action.title}</h3>
+            <div className="bg-gray-50 dark:bg-gray-800 rounded p-3 mb-2">
+              <p className="text-sm text-gray-700 dark:text-gray-300 font-mono">{action.prompt}</p>
+            </div>
+            <button
+              onClick={() => copyPrompt(action.prompt, i)}
+              className="text-xs px-3 py-1 rounded bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300 hover:bg-primary-200 dark:hover:bg-primary-800 transition-colors"
+            >
+              {copiedIndex === i ? '✓ コピーしました' : '📋 プロンプトをコピー'}
+            </button>
           </div>
-          <div className="mt-2 text-sm text-gray-600 dark:text-gray-400 flex gap-4">
-            <span>工数: {action.effort}</span>
-            {action.owner && <span>担当: {action.owner}</span>}
-            {action.duedate && <span>期限: {action.duedate}</span>}
-          </div>
-        </div>
-      ))}
+        ))
+      )}
     </div>
   );
 }
