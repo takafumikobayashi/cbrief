@@ -12,11 +12,30 @@ interface RateLimitConfig {
   globalDailyLimit: number; // 全体の1日制限
 }
 
+/**
+ * 環境変数から正の整数をパースし、無効な場合はデフォルト値を返す
+ * NaN、負の値、ゼロを防ぐためのガード
+ */
+export function parsePositiveInt(
+  value: string | undefined,
+  defaultValue: number,
+  name: string
+): number {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    if (value !== undefined) {
+      console.warn(`⚠️  Invalid ${name}="${value}", using default: ${defaultValue}`);
+    }
+    return defaultValue;
+  }
+  return Math.floor(parsed); // 整数に丸める
+}
+
 const RATE_LIMITS: RateLimitConfig = {
-  minuteLimit: parseInt(process.env.RATE_LIMIT_MINUTE || '10'), // デフォルト: 1分10回
-  dailyLimit: parseInt(process.env.RATE_LIMIT_DAILY || '200'), // デフォルト: 1日200回
+  minuteLimit: parsePositiveInt(process.env.RATE_LIMIT_MINUTE, 10, 'RATE_LIMIT_MINUTE'),
+  dailyLimit: parsePositiveInt(process.env.RATE_LIMIT_DAILY, 200, 'RATE_LIMIT_DAILY'),
   enableGlobalLimit: process.env.ENABLE_GLOBAL_LIMIT === 'true',
-  globalDailyLimit: parseInt(process.env.GLOBAL_DAILY_LIMIT || '5000'),
+  globalDailyLimit: parsePositiveInt(process.env.GLOBAL_DAILY_LIMIT, 5000, 'GLOBAL_DAILY_LIMIT'),
 };
 
 /**
