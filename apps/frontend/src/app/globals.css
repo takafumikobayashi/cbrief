@@ -95,130 +95,134 @@
   }
 
   /* Highlight.js GitHub風カラースキーム（ライトモード） */
-  .hljs {
+  .github-code-block .hljs,
+  .github-code-block code {
     color: #24292f;
   }
 
-  .hljs-comment,
-  .hljs-quote {
-    color: #6e7781;
+  .github-code-block .hljs-comment,
+  .github-code-block .hljs-quote {
+    color: #6e7781 !important;
     font-style: italic;
   }
 
-  .hljs-keyword,
-  .hljs-selector-tag,
-  .hljs-type {
-    color: #cf222e;
-  }
-
-  .hljs-string,
-  .hljs-meta .hljs-string {
-    color: #0a3069;
-  }
-
-  .hljs-number,
-  .hljs-literal,
-  .hljs-variable,
-  .hljs-template-variable,
-  .hljs-tag .hljs-attr {
-    color: #0550ae;
-  }
-
-  .hljs-title,
-  .hljs-section {
-    color: #8250df;
+  .github-code-block .hljs-keyword,
+  .github-code-block .hljs-selector-tag,
+  .github-code-block .hljs-type {
+    color: #cf222e !important;
     font-weight: 600;
   }
 
-  .hljs-attr,
-  .hljs-attribute,
-  .hljs-class .hljs-title,
-  .hljs-template-tag {
-    color: #0550ae;
+  .github-code-block .hljs-string,
+  .github-code-block .hljs-meta .hljs-string {
+    color: #0a3069 !important;
   }
 
-  .hljs-regexp,
-  .hljs-link {
-    color: #116329;
+  .github-code-block .hljs-number,
+  .github-code-block .hljs-literal,
+  .github-code-block .hljs-variable,
+  .github-code-block .hljs-template-variable,
+  .github-code-block .hljs-tag .hljs-attr {
+    color: #0550ae !important;
   }
 
-  .hljs-symbol,
-  .hljs-bullet,
-  .hljs-meta {
-    color: #953800;
+  .github-code-block .hljs-title,
+  .github-code-block .hljs-section {
+    color: #8250df !important;
+    font-weight: 600;
   }
 
-  .hljs-deletion {
-    color: #82071e;
+  .github-code-block .hljs-attr,
+  .github-code-block .hljs-attribute,
+  .github-code-block .hljs-class .hljs-title,
+  .github-code-block .hljs-template-tag {
+    color: #0550ae !important;
+  }
+
+  .github-code-block .hljs-regexp,
+  .github-code-block .hljs-link {
+    color: #116329 !important;
+  }
+
+  .github-code-block .hljs-symbol,
+  .github-code-block .hljs-bullet,
+  .github-code-block .hljs-meta {
+    color: #953800 !important;
+  }
+
+  .github-code-block .hljs-deletion {
+    color: #82071e !important;
     background-color: #ffebe9;
   }
 
-  .hljs-addition {
-    color: #116329;
+  .github-code-block .hljs-addition {
+    color: #116329 !important;
     background-color: #dafbe1;
   }
 
   /* Highlight.js GitHub風カラースキーム（ダークモード） */
-  .dark .hljs {
+  .dark .github-code-block .hljs,
+  .dark .github-code-block code {
     color: #c9d1d9;
   }
 
-  .dark .hljs-comment,
-  .dark .hljs-quote {
-    color: #8b949e;
+  .dark .github-code-block .hljs-comment,
+  .dark .github-code-block .hljs-quote {
+    color: #8b949e !important;
     font-style: italic;
   }
 
-  .dark .hljs-keyword,
-  .dark .hljs-selector-tag,
-  .dark .hljs-type {
-    color: #ff7b72;
-  }
-
-  .dark .hljs-string,
-  .dark .hljs-meta .hljs-string {
-    color: #a5d6ff;
-  }
-
-  .dark .hljs-number,
-  .dark .hljs-literal,
-  .dark .hljs-variable,
-  .dark .hljs-template-variable,
-  .dark .hljs-tag .hljs-attr {
-    color: #79c0ff;
-  }
-
-  .dark .hljs-title,
-  .dark .hljs-section {
-    color: #d2a8ff;
+  .dark .github-code-block .hljs-keyword,
+  .dark .github-code-block .hljs-selector-tag,
+  .dark .github-code-block .hljs-type {
+    color: #ff7b72 !important;
     font-weight: 600;
   }
 
-  .dark .hljs-attr,
-  .dark .hljs-attribute,
-  .dark .hljs-class .hljs-title,
-  .dark .hljs-template-tag {
-    color: #79c0ff;
+  .dark .github-code-block .hljs-string,
+  .dark .github-code-block .hljs-meta .hljs-string {
+    color: #a5d6ff !important;
   }
 
-  .dark .hljs-regexp,
-  .dark .hljs-link {
-    color: #a5d6ff;
+  .dark .github-code-block .hljs-number,
+  .dark .github-code-block .hljs-literal,
+  .dark .github-code-block .hljs-variable,
+  .dark .github-code-block .hljs-template-variable,
+  .dark .github-code-block .hljs-tag .hljs-attr {
+    color: #79c0ff !important;
   }
 
-  .dark .hljs-symbol,
-  .dark .hljs-bullet,
-  .dark .hljs-meta {
-    color: #ffa657;
+  .dark .github-code-block .hljs-title,
+  .dark .github-code-block .hljs-section {
+    color: #d2a8ff !important;
+    font-weight: 600;
   }
 
-  .dark .hljs-deletion {
-    color: #ffdcd7;
+  .dark .github-code-block .hljs-attr,
+  .dark .github-code-block .hljs-attribute,
+  .dark .github-code-block .hljs-class .hljs-title,
+  .dark .github-code-block .hljs-template-tag {
+    color: #79c0ff !important;
+  }
+
+  .dark .github-code-block .hljs-regexp,
+  .dark .github-code-block .hljs-link {
+    color: #a5d6ff !important;
+  }
+
+  .dark .github-code-block .hljs-symbol,
+  .dark .github-code-block .hljs-bullet,
+  .dark .github-code-block .hljs-meta {
+    color: #ffa657 !important;
+  }
+
+  .dark .github-code-block .hljs-deletion {
+    color: #ffdcd7 !important;
     background-color: #67060c;
   }
 
-  .dark .hljs-addition {
-    color: #aff5b4;
+  .dark .github-code-block .hljs-addition {
+    color: #aff5b4 !important;
     background-color: #033a16;
   }
 }

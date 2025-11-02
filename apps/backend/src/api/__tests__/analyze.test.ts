@@ -3,6 +3,7 @@ import express from 'express';
 import { analyzeRouter } from '../analyze';
 import { formatWithGemini } from '../../utils/geminiClient';
 import { runStaticAnalysis } from '../../utils/staticAnalysis';
+import { disconnectRedis } from '../../utils/redisClient';
 
 // Mock the geminiClient and staticAnalysis modules
 jest.mock('../../utils/geminiClient', () => ({
@@ -35,6 +36,11 @@ describe('/api/analyze', () => {
     // Clear mock history before each test
     (formatWithGemini as jest.Mock).mockClear();
     (runStaticAnalysis as jest.Mock).mockClear();
+  });
+
+  afterAll(async () => {
+    // Clean up Redis connection to prevent "Cannot log after tests are done" warnings
+    await disconnectRedis();
   });
 
   it('should return a 400 error if content is not provided', async () => {
