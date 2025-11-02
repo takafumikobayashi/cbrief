@@ -5,14 +5,16 @@ import { runStaticAnalysis } from '../utils/staticAnalysis';
 import { formatWithGemini } from '../utils/geminiClient';
 // import { extractFromAST } from '../utils/astExtractor'; // Temporarily disabled
 import { loadPolicies } from '../utils/policyLoader';
+import { rateLimitMiddleware } from '../middleware/rateLimiter';
 
 export const analyzeRouter = Router();
 
 /**
  * POST /api/analyze
  * コード解析エンドポイント（Sprint 1: 実装版）
+ * レート制限付き: 1分10回、1日200回
  */
-analyzeRouter.post('/analyze', async (req, res) => {
+analyzeRouter.post('/analyze', rateLimitMiddleware, async (req, res) => {
   try {
     const request: AnalyzeRequest = req.body;
 

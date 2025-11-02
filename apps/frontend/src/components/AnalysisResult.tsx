@@ -177,6 +177,9 @@ function RisksTab({ result }: Props) {
     Low: 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-700',
   };
 
+  // 検出された言語を取得
+  const language = result.detectedLanguage === 'json' ? 'javascript' : result.detectedLanguage;
+
   return (
     <div className="space-y-4">
       {result.risks.map((risk, i) => (
@@ -191,7 +194,11 @@ function RisksTab({ result }: Props) {
           <div className="text-sm mb-3">
             <strong>根拠:</strong> {risk.evidence.rule} ({risk.evidence.file}:{risk.evidence.line})
             <div className="mt-1">
-              <CodeBlock code={risk.evidence.excerpt} className="!my-0 text-xs" />
+              <CodeBlock
+                code={risk.evidence.excerpt}
+                language={language}
+                className="!my-0 text-xs"
+              />
             </div>
           </div>
 
