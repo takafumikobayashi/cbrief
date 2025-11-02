@@ -32,9 +32,7 @@ describe('parsePositiveInt', () => {
   describe('invalid inputs', () => {
     it('should return default for non-numeric string', () => {
       expect(parsePositiveInt('abc', 5, 'TEST')).toBe(5);
-      expect(console.warn).toHaveBeenCalledWith(
-        '⚠️  Invalid TEST="abc", using default: 5'
-      );
+      expect(console.warn).toHaveBeenCalledWith('⚠️  Invalid TEST="abc", using default: 5');
     });
 
     it('should return default for zero', () => {
@@ -54,9 +52,7 @@ describe('parsePositiveInt', () => {
 
     it('should return default for string with units', () => {
       expect(parsePositiveInt('10/min', 5, 'TEST')).toBe(5);
-      expect(console.warn).toHaveBeenCalledWith(
-        '⚠️  Invalid TEST="10/min", using default: 5'
-      );
+      expect(console.warn).toHaveBeenCalledWith('⚠️  Invalid TEST="10/min", using default: 5');
     });
 
     it('should return default for NaN', () => {

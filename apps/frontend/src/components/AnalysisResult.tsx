@@ -138,7 +138,7 @@ function SummaryTab({ result }: Props) {
           {summary.data_sensitivity.map((level, i) => (
             <span
               key={i}
-              className="px-2 py-1 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 rounded text-sm"
+              className="px-2 py-1 bg-yellow-100 dark:bg-gray-700 text-yellow-800 dark:text-yellow-300 rounded text-sm"
             >
               {level}
             </span>
@@ -171,10 +171,10 @@ function SummaryTab({ result }: Props) {
 
 function RisksTab({ result }: Props) {
   const severityColors = {
-    High: 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 border-red-200 dark:border-red-700',
+    High: 'bg-red-100 dark:bg-red-950 text-red-800 dark:text-red-300 border-red-200 dark:border-red-800',
     Medium:
-      'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 border-yellow-200 dark:border-yellow-700',
-    Low: 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-700',
+      'bg-yellow-100 dark:bg-yellow-950 text-yellow-800 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800',
+    Low: 'bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-800',
   };
 
   // 検出された言語を取得

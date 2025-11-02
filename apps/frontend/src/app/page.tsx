@@ -55,7 +55,7 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen p-8 dark:bg-gray-900 transition-colors">
+    <main className="p-8 dark:bg-gray-900 transition-colors">
       <div className="max-w-7xl mx-auto">
         <header className="mb-8 flex items-center justify-between">
           <div>
