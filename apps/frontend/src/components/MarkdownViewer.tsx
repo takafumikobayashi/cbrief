@@ -57,7 +57,7 @@ export function MarkdownViewer({ content }: MarkdownViewerProps) {
               {...props}
             />
           ),
-          code: ({ className, children, ...props }) => {
+          code: ({ className, children, ref: _ref, ...props }) => {
             const match = /language-(\w+)/.exec(className || '');
             const language = match ? match[1] : '';
             const isInline = !match;
@@ -76,14 +76,14 @@ export function MarkdownViewer({ content }: MarkdownViewerProps) {
             return (
               <SyntaxHighlighter
                 language={language}
-                style={isDark ? vscDarkPlus : vs}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                style={isDark ? (vscDarkPlus as any) : (vs as any)}
                 customStyle={{
                   borderRadius: '0.5rem',
                   padding: '1rem',
                   fontSize: '0.9375rem',
                   margin: '1rem 0',
                 }}
-                {...props}
               >
                 {String(children).replace(/\n$/, '')}
               </SyntaxHighlighter>
