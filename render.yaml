@@ -1,5 +1,6 @@
 # Render Blueprint for cbrief
 # https://render.com/docs/blueprint-spec
+# GitHub mainブランチへのマージで自動デプロイ
 
 services:
   # Backend API Service
@@ -17,5 +18,21 @@ services:
         value: 3001
       - key: NODE_ENV
         value: production
+      - key: TRUST_PROXY
+        value: 1
       - key: GEMINI_API_KEY
         sync: false  # Set manually in Render dashboard for security
+      # Redis (Upstash) - Set manually in Render dashboard
+      - key: REDIS_HOST
+        sync: false
+      - key: REDIS_PORT
+        sync: false
+      - key: REDIS_PASSWORD
+        sync: false
+      - key: REDIS_TLS
+        value: true
+      # Rate Limiting
+      - key: RATE_LIMIT_MINUTE
+        value: 10
+      - key: RATE_LIMIT_DAILY
+        value: 200
